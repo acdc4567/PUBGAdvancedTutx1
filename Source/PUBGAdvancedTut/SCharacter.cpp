@@ -5,9 +5,15 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
+#include "Components/BoxComponent.h"
 #include "ItemWeapon.h"
 #include "PickupBase.h"
+#include "PickupWeapon.h"
+#include "PickupWeaponAcc.h"
+#include "PickupAmmo.h"
+#include "PickupBoost.h"
+#include "PickupEquipment.h"
+#include "PickupHealth.h"
 #include "SPlayerState.h"
 #include "PUBGAdvancedTutGI.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -320,7 +326,7 @@ void ASCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	
+	TargetingItem();
 	
 
 }
@@ -356,7 +362,10 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Aiming",IE_Pressed,this,&ASCharacter::AimKeyPressed);
 	PlayerInputComponent->BindAction("Aiming",IE_Released,this,&ASCharacter::AimKeyReleased);
 
-
+	PlayerInputComponent->BindAction("DiscardWeapon",IE_Pressed,this,&ASCharacter::BeginDiscard);
+	
+	PlayerInputComponent->BindAction("Interaction",IE_Pressed,this,&ASCharacter::BeginPickupItem);
+	
 }
 
 bool ASCharacter::LimitPitchAngle(float Axis){
@@ -698,8 +707,473 @@ FName ASCharacter::CalculateHoldGunSocket(){
 }
 
 
+//ItemsOverlap
 
 
+void ASCharacter::SetPickupItems(TArray<APickupBase*> Items){
+	PickupItems=Items;
+	for(int32 i=0;i<PickupItems.Num();i++){
+		PickupItems[i]->OnBeginOverlap.AddDynamic(this,&ASCharacter::ExecBeginOverlap);
+		PickupItems[i]->OnEndOverlap.AddDynamic(this,&ASCharacter::ExecEndOverlap);
+	
+	}
+}
+
+void ASCharacter::ExecBeginOverlap(APickupBase* PickupObject){
+	
+	//OutlineItem(PickupObject);
+	ItemsInRange.Add(PickupObject);
+}
+
+void ASCharacter::ExecEndOverlap(APickupBase* PickupObject){
+	
+	PickupObject->EnabledOutLine(false);
+	ItemsInRange.Remove(PickupObject);
+}
+
+void ASCharacter::OutlineItem(APickupBase* Item){
+	for(int32 i=0;i<ItemsInRange.Num();i++){
+		if(Item==ItemsInRange[i]){
+			Item->EnabledOutLine(true);
+
+		}
+		else{
+			Item->EnabledOutLine(false);
+		}
+	}
+}
+
+void ASCharacter::TargetingItem(){
+	FHitResult OutHitResult;
+	FVector OutHitLocation;
+	float ShortestDistance=10000.f;
+	APickupBase* ShortestItem;
+
+
+	if(ItemsInRange.Num()>0){
+			// Get Viewport Size
+		FVector2D ViewportSize;
+		if (GEngine && GEngine->GameViewport)
+		{
+			GEngine->GameViewport->GetViewportSize(ViewportSize);
+		}
+
+		// Get screen space location of crosshairs
+		FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+		FVector CrosshairWorldPosition;
+		FVector CrosshairWorldDirection;
+
+		// Get world position and direction of crosshairs
+		bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+			UGameplayStatics::GetPlayerController(this, 0),
+			CrosshairLocation,
+			CrosshairWorldPosition,
+			CrosshairWorldDirection);
+
+		if (bScreenToWorld){
+			// Trace from Crosshair world location outward
+			const FVector Start{ CrosshairWorldPosition };
+			const FVector End{ Start + CrosshairWorldDirection * 500.f };
+			OutHitLocation = End;
+			GetWorld()->LineTraceSingleByChannel(
+				OutHitResult,
+				Start,
+				End,
+				ECollisionChannel::ECC_Visibility);
+		}
+		for(int32 i=0;i<ItemsInRange.Num();i++){
+			ItemsInRange[i]->EnabledOutLine(false);
+			if(FVector::Dist(ItemsInRange[i]->GetActorLocation(),OutHitResult.Location)<ShortestDistance){
+				ShortestDistance=FVector::Dist(ItemsInRange[i]->GetActorLocation(),OutHitResult.Location);
+				ShortestItem=ItemsInRange[i];
+			}
+		}
+		if(ShortestItem){
+			if(ShortestDistance<85.f)
+			ShortestItem->EnabledOutLine(true);
+			ReadyPickupItem=ShortestItem;
+
+		}
+		else{
+			ReadyPickupItem=nullptr;
+		}
+	}
+
+}
+
+
+void ASCharacter::AutoPosition(E_WeaponPosition &Positionx,bool &bIsOnHandx){
+	
+	int32 CurrentAmount=0;
+	if(PlayerStateRef->GetWeapon1()){
+		CurrentAmount++;
+
+	}
+	if(PlayerStateRef->GetWeapon2()){
+		CurrentAmount++;
+
+	}
+	if(PlayerStateRef->GetHoldGun()){
+		CurrentAmount++;
+	}
+	if(CurrentAmount==0){
+		Positionx=E_WeaponPosition::EWP_Left;
+		bIsOnHandx=true;
+		
+	}
+	else if(CurrentAmount<2){
+		if(PlayerStateRef->GetHoldGun()){
+			if(PlayerStateRef->GetHoldGun()->Position==E_WeaponPosition::EWP_Left){
+				Positionx=E_WeaponPosition::EWP_Right;
+				bIsOnHandx=false;
+			}
+			else if(PlayerStateRef->GetHoldGun()->Position==E_WeaponPosition::EWP_Right){
+				Positionx=E_WeaponPosition::EWP_Left;
+				bIsOnHandx=false;
+			}
+		}
+		else{
+			if(PlayerStateRef->GetWeapon1()){
+				Positionx=E_WeaponPosition::EWP_Right;
+				bIsOnHandx=false;
+			}
+			else{
+				Positionx=E_WeaponPosition::EWP_Left;
+				bIsOnHandx=false;
+
+			}
+		}
+	}
+	else{
+		if(PlayerStateRef->GetHoldGun()){
+			if(PlayerStateRef->GetHoldGun()->Position==E_WeaponPosition::EWP_Left){
+				Positionx=E_WeaponPosition::EWP_Left;
+				bIsOnHandx=true;
+			}
+			else if(PlayerStateRef->GetHoldGun()->Position==E_WeaponPosition::EWP_Right){
+				Positionx=E_WeaponPosition::EWP_Right;
+				bIsOnHandx=true;
+			}
+		}
+		else{
+			Positionx=E_WeaponPosition::EWP_Left;
+			bIsOnHandx=false;
+		}
+	}
+
+
+}
+
+void ASCharacter::AssignPosition(const E_WeaponPosition Assign,E_WeaponPosition &Positionx,bool &bIsOnHandx){
+
+	if(PlayerStateRef->GetHoldGun()){
+		if(PlayerStateRef->GetHoldGun()->Position==Assign){
+			Positionx=Assign;
+			bIsOnHandx=true;
+		}
+		else{
+			Positionx=Assign;
+			bIsOnHandx=false;
+		}
+	}
+	else{
+		Positionx=Assign;
+		bIsOnHandx=false;
+	}
+
+}
+
+void ASCharacter::SpawnPickupItem(AItemBase* ItemBasex1,APickupBase* &PickupItemx1){
+	FName TempID=ItemBasex1->ID;
+	FString TempSN=ItemBasex1->SN;
+	FTransform TempTransform ;
+	TempTransform.SetLocation(GetActorLocation());
+	TempTransform.SetRotation(FQuat(0,0,0,0));
+	TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+	if(ItemBasex1->ItemType==E_ItemType::EIT_Weapon){
+		APickupWeapon* TempPickupWeapon=Cast<APickupWeapon>(ItemBasex1);
+		TempPickupWeapon=GetWorld()->SpawnActorDeferred<APickupWeapon>(APickupWeapon::StaticClass(),TempTransform);
+		if(TempPickupWeapon){
+		
+			TempPickupWeapon->ID=TempID;
+			TempPickupWeapon->SN=TempSN;
+			TempPickupWeapon->Amount=1;	
+			AItemWeapon* TempWeapon=Cast<AItemWeapon>(ItemBasex1);
+			
+			TempPickupWeapon->Ammo=TempWeapon->Ammo;
+			UGameplayStatics::FinishSpawningActor(TempPickupWeapon,TempTransform);
+		}
+		PickupItemx1=Cast<APickupBase>(TempPickupWeapon);
+
+	}
+
+	else if(ItemBasex1->ItemType==E_ItemType::EIT_Accessories){
+		APickupWeaponAcc* TempPickupWeapon=Cast<APickupWeaponAcc>(ItemBasex1);
+		TempPickupWeapon=GetWorld()->SpawnActorDeferred<APickupWeaponAcc>(APickupWeaponAcc::StaticClass(),TempTransform);
+		if(TempPickupWeapon){
+			TempPickupWeapon->ID=TempID;
+			TempPickupWeapon->SN=TempSN;
+			TempPickupWeapon->Amount=1;	
+			
+			
+			UGameplayStatics::FinishSpawningActor(TempPickupWeapon,TempTransform);
+		}
+		PickupItemx1=Cast<APickupBase>(TempPickupWeapon);
+
+	}
+
+	else if(ItemBasex1->ItemType==E_ItemType::EIT_Ammo){
+		APickupAmmo* TempPickupBase=Cast<APickupAmmo>(ItemBasex1);
+		TempPickupBase=GetWorld()->SpawnActorDeferred<APickupAmmo>(APickupAmmo::StaticClass(),TempTransform);
+		if(TempPickupBase){
+			TempPickupBase->ID=TempID;
+			TempPickupBase->SN=TempSN;
+			TempPickupBase->Amount=ItemBasex1->Amount;	
+			
+			
+			UGameplayStatics::FinishSpawningActor(TempPickupBase,TempTransform);
+		}
+		PickupItemx1=Cast<APickupBase>(TempPickupBase);
+
+	}
+
+	else if(ItemBasex1->ItemType==E_ItemType::EIT_Health){
+		APickupHealth* TempPickupBase=Cast<APickupHealth>(ItemBasex1);
+		TempPickupBase=GetWorld()->SpawnActorDeferred<APickupHealth>(APickupHealth::StaticClass(),TempTransform);
+		if(TempPickupBase){
+			TempPickupBase->ID=TempID;
+			TempPickupBase->SN=TempSN;
+			TempPickupBase->Amount=ItemBasex1->Amount;	
+			
+			
+			UGameplayStatics::FinishSpawningActor(TempPickupBase,TempTransform);
+		}
+		PickupItemx1=Cast<APickupBase>(TempPickupBase);
+
+	}
+
+	else if(ItemBasex1->ItemType==E_ItemType::EIT_Boost){
+		APickupBoost* TempPickupBase=Cast<APickupBoost>(ItemBasex1);
+		TempPickupBase=GetWorld()->SpawnActorDeferred<APickupBoost>(APickupBoost::StaticClass(),TempTransform);
+		if(TempPickupBase){
+			TempPickupBase->ID=TempID;
+			TempPickupBase->SN=TempSN;
+			TempPickupBase->Amount=ItemBasex1->Amount;	
+			
+			
+			UGameplayStatics::FinishSpawningActor(TempPickupBase,TempTransform);
+		}
+		PickupItemx1=Cast<APickupBase>(TempPickupBase);
+
+	}
+
+	else if(ItemBasex1->ItemType==E_ItemType::EIT_Helmet||ItemBasex1->ItemType==E_ItemType::EIT_Vest||ItemBasex1->ItemType==E_ItemType::EIT_Backpack){
+		APickupEquipment* TempPickupBase=Cast<APickupEquipment>(ItemBasex1);
+		TempPickupBase=GetWorld()->SpawnActorDeferred<APickupEquipment>(APickupEquipment::StaticClass(),TempTransform);
+		if(TempPickupBase){
+			TempPickupBase->ID=TempID;
+			TempPickupBase->SN=TempSN;
+			TempPickupBase->Amount=1;	
+			
+			
+			UGameplayStatics::FinishSpawningActor(TempPickupBase,TempTransform);
+		}
+		PickupItemx1=Cast<APickupBase>(TempPickupBase);
+
+	}
+	
+	
+	CompleteSpawnPickupItem(PickupItemx1);
+	
+	
+	
+
+}
+
+void ASCharacter::CompleteSpawnPickupItem(APickupBase* PickupItemx1){
+	PickupItems.Add(PickupItemx1);
+	PickupItemx1->OnBeginOverlap.AddDynamic(this,&ASCharacter::ExecBeginOverlap);
+	PickupItemx1->OnEndOverlap.AddDynamic(this,&ASCharacter::ExecEndOverlap);
+	PickupItemx1->GetBox()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PickupItemx1->GetBox()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	
+}
+
+void ASCharacter::BeginDiscard(){
+	if(!bIsProne){
+		if(!bIsPlayingMontage){
+			if(PlayerStateRef->GetHoldGun()){
+				DiscardWeapon(PlayerStateRef->GetHoldGun());
+			}
+			else if(PlayerStateRef->GetWeapon1()){
+				DiscardWeapon(PlayerStateRef->GetWeapon1());
+			}
+			else if (PlayerStateRef->GetWeapon2()){
+				DiscardWeapon(PlayerStateRef->GetWeapon2());
+			}
+		}
+	}
+}
+
+
+
+void ASCharacter::DiscardWeapon(AItemWeapon* ItemWeaponx1){
+	APickupBase* TempPickupBase;
+	SpawnPickupItem(ItemWeaponx1,TempPickupBase);
+	if (ItemWeaponx1->SightAccActorx1)
+	{
+		AItemWeaponAcc* TempItemBas=ItemWeaponx1->SightAccActorx1;
+		AItemBase* TempItemBase=Cast<AItemBase>(TempItemBas);
+		SpawnPickupItem(TempItemBase,TempPickupBase);
+		bool bIsDestroyed=Cast<AActor>(ItemWeaponx1->SightAccActorx1)->Destroy();
+		
+	}
+	if (ItemWeaponx1->ForegripAccActorx1)
+	{
+		AItemWeaponAcc* TempItemBas=ItemWeaponx1->ForegripAccActorx1;
+		AItemBase* TempItemBase=Cast<AItemBase>(TempItemBas);
+		
+		SpawnPickupItem(TempItemBase,TempPickupBase);
+		bool bIsDestroyed=Cast<AActor>(ItemWeaponx1->ForegripAccActorx1)->Destroy();
+		
+	}
+	if (ItemWeaponx1->MagAccActorx1)
+	{
+		AItemWeaponAcc* TempItemBas=ItemWeaponx1->MagAccActorx1;
+		AItemBase* TempItemBase=Cast<AItemBase>(TempItemBas);
+		
+		SpawnPickupItem(TempItemBase,TempPickupBase);
+		bool bIsDestroyed=Cast<AActor>(ItemWeaponx1->MagAccActorx1)->Destroy();
+		
+	}
+	if (ItemWeaponx1->MuzzleAccActorx1)
+	{
+		AItemWeaponAcc* TempItemBas=ItemWeaponx1->MuzzleAccActorx1;
+		AItemBase* TempItemBase=Cast<AItemBase>(TempItemBas);
+		
+		SpawnPickupItem(TempItemBase,TempPickupBase);
+		bool bIsDestroyed=Cast<AActor>(ItemWeaponx1->MuzzleAccActorx1)->Destroy();
+		
+	}
+	if (ItemWeaponx1->ButtstockAccActorx1)
+	{
+		AItemWeaponAcc* TempItemBas=ItemWeaponx1->ButtstockAccActorx1;
+		AItemBase* TempItemBase=Cast<AItemBase>(TempItemBas);
+		
+		SpawnPickupItem(TempItemBase,TempPickupBase);
+		bool bIsDestroyed=Cast<AActor>(ItemWeaponx1->ButtstockAccActorx1)->Destroy();
+		
+	}
+	if(ItemWeaponx1->bIsOnHand){
+		PlayerStateRef->SetHoldGun(nullptr);
+	}
+	else{
+		if(ItemWeaponx1->Position==E_WeaponPosition::EWP_Left){
+			PlayerStateRef->SetWeapon1(nullptr);
+		}
+		else if(ItemWeaponx1->Position==E_WeaponPosition::EWP_Right){
+			PlayerStateRef->SetWeapon2(nullptr);
+
+		}
+	} 
+	bool bIsDestroyed=Cast<AActor>(ItemWeaponx1)->Destroy();
+		
+}
+
+void ASCharacter::PickupWeapon(class APickupWeapon* PickupWeaponx1,bool bIsAssign,E_WeaponPosition Positionx1){
+	E_WeaponPosition TargetPosition;
+	bool TargetbIsOnHand;
+	AItemWeapon* ReplaceWeapon=nullptr;
+	if(bIsAssign){
+		AssignPosition(Positionx1,TargetPosition,TargetbIsOnHand);
+	}
+	else{
+		AutoPosition(TargetPosition,TargetbIsOnHand);
+	}
+	
+	
+	
+	if(TargetbIsOnHand){
+		if(PlayerStateRef->GetHoldGun()){
+			ReplaceWeapon=PlayerStateRef->GetHoldGun();
+		}
+	}
+	else{
+		if(TargetPosition==E_WeaponPosition::EWP_Left){
+			if(PlayerStateRef->GetWeapon1()){
+				ReplaceWeapon=PlayerStateRef->GetWeapon1();
+			}
+
+		}
+		else if(TargetPosition==E_WeaponPosition::EWP_Right){
+			if(PlayerStateRef->GetWeapon2()){
+				ReplaceWeapon=PlayerStateRef->GetWeapon2();
+			}
+			
+		}
+	}
+	//NextStep
+	if(ReplaceWeapon!=nullptr){
+		
+		DiscardWeapon(ReplaceWeapon);
+	}
+	AItemWeapon* TempWeapon;
+	FTransform TempTransform;
+	TempTransform.SetLocation(FVector::ZeroVector);
+	TempTransform.SetRotation(FQuat(0,0,0,0));
+	TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+	TempWeapon=GetWorld()->SpawnActorDeferred<AItemWeapon>(AItemWeapon::StaticClass(),TempTransform);
+	if(TempWeapon){
+		
+		TempWeapon->Ammo=PickupWeaponx1->Ammo;
+		TempWeapon->Position=TargetPosition;
+		TempWeapon->ID=PickupWeaponx1->ID;
+		TempWeapon->bIsOnHand=TargetbIsOnHand;
+		TempWeapon->SN=PickupWeaponx1->SN;
+		TempWeapon->Amount=1;	
+		
+		
+		UGameplayStatics::FinishSpawningActor(TempWeapon,TempTransform);
+	}
+	if(TargetbIsOnHand){
+		PlayerStateRef->SetHoldGun(TempWeapon);
+	}
+	else{
+		if(TargetPosition==E_WeaponPosition::EWP_Left){
+			PlayerStateRef->SetWeapon1(TempWeapon);
+		}
+		else if(TargetPosition==E_WeaponPosition::EWP_Right){
+			PlayerStateRef->SetWeapon2(TempWeapon);
+		}
+	}
+	
+
+}
+
+bool ASCharacter::PickupItem(){
+	
+	if(ReadyPickupItem){
+		
+		if(ReadyPickupItem->ItemType==E_ItemType::EIT_Weapon){
+			APickupWeapon* TempWeapon=Cast<APickupWeapon>(ReadyPickupItem);
+			bool TempbIsAssign=false;
+			E_WeaponPosition TempPosition=E_WeaponPosition::EWP_Left;
+			PickupWeapon(TempWeapon,TempbIsAssign,TempPosition);
+			bool bIsSuccess=Cast<AActor>(ReadyPickupItem)->Destroy();
+			return true;
+		}
+	}
+	else{
+		return false;
+	}
+	
+	return false;
+}
+
+void ASCharacter::BeginPickupItem(){
+	
+	bool bIsSuccess=PickupItem();
+}
 
 
 

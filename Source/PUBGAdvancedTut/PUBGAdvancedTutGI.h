@@ -50,7 +50,7 @@ public:
 	FName BackLeftBName=TEXT("Socket_BackLeft_Backpack");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Position)
-	FName BackRightBName=TEXT("Socket_Right_Backpack");
+	FName BackRightBName=TEXT("Socket_BackRight_Backpack");
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment)
 	FName HelmetName=TEXT("Socket_Helmet");

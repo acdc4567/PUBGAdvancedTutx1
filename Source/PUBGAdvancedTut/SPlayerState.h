@@ -52,7 +52,8 @@ public:
 
 //SetterFunctions
 	void SetWeapon1(AItemWeapon* Weapon);
-
+	
+	UFUNCTION(BlueprintCallable)
 	void SetWeapon2(AItemWeapon* Weapon);
 
 	UFUNCTION(BlueprintCallable)
@@ -67,12 +68,13 @@ public:
 	void SetEnergyPoint(float EP);
 
 //ArrayAdd
-
+	UFUNCTION(BlueprintCallable)
 	void AddEquipment(AItemBase* Equipment);
 
 	void AddItemsInBackpack(AItemBase* Item);
 
 //ArrayRemove
+	UFUNCTION(BlueprintCallable)
 	bool RemoveEquipment(AItemBase* Equipment);
 
 	bool RemoveItemsInBackpack(AItemBase* Item);

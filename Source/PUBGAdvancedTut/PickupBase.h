@@ -24,6 +24,8 @@ class PUBGADVANCEDTUT_API APickupBase : public AItemBase
 public:
 	APickupBase();
 
+	void EnabledOutLine(bool bIsEnable);
+
 private:
 	
 	
@@ -52,7 +54,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	FText UI_Prefix;
 
-	void InitPickup(E_ItemType ItemType,FText Name,FText UI_Prefix1,UStaticMesh* StaticMeshx1 );
+	void InitPickup(E_ItemType ItemTypex1,FText Namex1,FText UI_Prefix1,UStaticMesh* StaticMeshx1 );
 
 	virtual void BeginPlay() override;
 
@@ -63,5 +65,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable,Category="Events")
 	FOnEndOverlapSignature OnEndOverlap;
+
+	FORCEINLINE UBoxComponent* GetBox() const {return Box;}
 
 };

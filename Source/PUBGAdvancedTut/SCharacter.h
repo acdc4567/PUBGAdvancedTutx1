@@ -12,11 +12,12 @@ class UCameraComponent;
 class USpringArmComponent;
 class UAnimMontage;
 class UDataTable;
-
 class APickupBase;
 class ASPlayerState;
 class UPUBGAdvancedTutGI;
 class AItemWeapon;
+
+
 
 USTRUCT(BlueprintType)
 struct FSTR_ProneTime : public FTableRowBase
@@ -56,7 +57,8 @@ public:
 	// Sets default values for this character's properties
 	ASCharacter();
 
-
+	UFUNCTION(BlueprintCallable,Category=ItemsOverlap)
+	void SetPickupItems(TArray<APickupBase*> Items);
 	
 
 	
@@ -128,6 +130,40 @@ protected:
 	UFUNCTION(BlueprintPure,Category=CalculateSocket)
 	FName CalculateHoldGunSocket();
 
+	//Items Overlap
+
+	
+	UFUNCTION()
+	void ExecBeginOverlap(APickupBase* PickupObject);
+
+	UFUNCTION()
+	void ExecEndOverlap(APickupBase* PickupObject);
+
+	void OutlineItem(APickupBase* Item);
+
+	UFUNCTION(BlueprintCallable)
+	void TargetingItem();
+	
+	//Items->PickupWeapon
+	void AutoPosition(E_WeaponPosition &Positionx,bool &bIsOnHandx);
+
+	void AssignPosition(const E_WeaponPosition Assign,E_WeaponPosition &Positionx,bool &bIsOnHandx);
+
+	//Items->Discard
+	UFUNCTION(BlueprintCallable)
+	void SpawnPickupItem(AItemBase* ItemBasex1,APickupBase* &PickupItemx1);
+
+	void CompleteSpawnPickupItem(APickupBase* PickupItemx1);
+
+	void BeginDiscard();
+
+	void BeginPickupItem();
+
+	void DiscardWeapon(AItemWeapon* ItemWeaponx1);
+
+	void PickupWeapon(class APickupWeapon* PickupWeaponx1,bool bIsAssign,E_WeaponPosition Position1);
+
+	bool PickupItem();
 
 public:	
 	// Called every frame
@@ -182,7 +218,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsEquip;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsReload;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = OnTheAir, meta = (AllowPrivateAccess = "true"))
@@ -298,6 +334,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = GameInstance, meta = (AllowPrivateAccess = "true"))
 	UPUBGAdvancedTutGI* GameInstanceRef;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PlayerState, meta = (AllowPrivateAccess = "true"))
+	APickupBase* ReadyPickupItem;
+
 
 
 public:

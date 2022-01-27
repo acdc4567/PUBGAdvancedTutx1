@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "ItemBase.h"
+#include "ItemWeaponAcc.h"
 #include "ItemWeapon.generated.h"
 
 class USkeletalMeshComponent;
 class UStaticMeshComponent;
-class AItemWeaponAcc;
+
 class UAudioComponent;
 
 
@@ -85,15 +86,7 @@ private:
 
 	UDataTable* ItemWeaponTableObject;
 
-	AItemWeaponAcc* MagAccActorx1;
-
-	AItemWeaponAcc* MuzzleAccActorx1;
-
-	AItemWeaponAcc* SightAccActorx1;
-
-	AItemWeaponAcc* ForegripAccActorx1;
-
-	AItemWeaponAcc* ButtstockAccActorx1;
+	
 
 public:
 
@@ -107,5 +100,15 @@ public:
 	bool bIsOnHand;
 
 	FSTR_ItemWeapon* ItemWeaponRow;
+
+	AItemWeaponAcc* MagAccActorx1;
+
+	AItemWeaponAcc* MuzzleAccActorx1;
+
+	AItemWeaponAcc* SightAccActorx1;
+
+	AItemWeaponAcc* ForegripAccActorx1;
+
+	AItemWeaponAcc* ButtstockAccActorx1;
 
 };

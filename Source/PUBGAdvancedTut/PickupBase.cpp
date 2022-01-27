@@ -21,6 +21,7 @@ APickupBase::APickupBase()
     UI=CreateDefaultSubobject<UWidgetComponent>("UI");
 
     Box=CreateDefaultSubobject<UBoxComponent>("Box");
+    Box->SetBoxExtent(FVector(220.f,220.f,100.f));
     Box->SetupAttachment(RootComponent);
 
 
@@ -37,7 +38,7 @@ void APickupBase::BeginPlay(){
 
 }
 
-void APickupBase::InitPickup(E_ItemType ItemType,FText Name,FText UI_Prefix1,UStaticMesh* StaticMeshx1 ){
+void APickupBase::InitPickup(E_ItemType ItemTypex1,FText Namex1,FText UI_Prefix1,UStaticMesh* StaticMeshx1 ){
 
     Init(ItemType,Name);
     UI_Prefix=UI_Prefix1;
@@ -47,7 +48,14 @@ void APickupBase::InitPickup(E_ItemType ItemType,FText Name,FText UI_Prefix1,USt
 
 
 
-
+void APickupBase::EnabledOutLine(bool bIsEnable){
+    if(bIsEnable){
+        StaticMesh->SetRenderCustomDepth(true);
+    }
+    else{
+        StaticMesh->SetRenderCustomDepth(false);
+    }
+}
 
 
 void APickupBase::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent,AActor* OtherActor,UPrimitiveComponent* OtherComp,int32 OtherBodyIndex,bool bFromSweep,const FHitResult& SweepResult){
