@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "ItemBase.h"
 #include "ItemWeaponAcc.h"
+#include "ItemAmmo.h"
 #include "ItemWeapon.generated.h"
 
 class USkeletalMeshComponent;

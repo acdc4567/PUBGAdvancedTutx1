@@ -7,6 +7,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
 #include "ItemWeapon.h"
+#include "ItemHealth.h"
+#include "ItemBoost.h"
+#include "ItemEquipment.h"
 #include "PickupBase.h"
 #include "PickupWeapon.h"
 #include "PickupWeaponAcc.h"
@@ -366,6 +369,15 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	
 	PlayerInputComponent->BindAction("Interaction",IE_Pressed,this,&ASCharacter::BeginPickupItem);
 	
+	PlayerInputComponent->BindAction("TakeBackGun",IE_Pressed,this,&ASCharacter::BeginPlayMontage);
+	
+	PlayerInputComponent->BindAction("Keyboard1",IE_Pressed,this,&ASCharacter::Keyboard1KeyPressed);
+	
+	PlayerInputComponent->BindAction("Keyboard2",IE_Pressed,this,&ASCharacter::Keyboard2KeyPressed);
+	
+
+
+
 }
 
 bool ASCharacter::LimitPitchAngle(float Axis){
@@ -586,7 +598,13 @@ void ASCharacter::HandleWalkSpeedFromTable(){
 		
 	}
 
+	//WalkSpeed perWeapon
 
+	if(PlayerStateRef->GetHoldGun()){
+		
+		WalkSpeed=WalkSpeed*PlayerStateRef->GetHoldGun()->ItemWeaponRow->WalkSpeedPer;
+	}
+ 
 }
 
 
@@ -646,7 +664,12 @@ void ASCharacter::UpdateWeaponDisplay(FName HoldSocket){
 
 		}
 	}
+
+	
 }
+
+
+
 
 void ASCharacter::UpdateEquipmentDisplay(){
 	TArray<AItemBase*> GetEquipmentsx1=PlayerStateRef->GetEquipments();
@@ -674,6 +697,7 @@ void ASCharacter::UpdateEquipmentDisplay(){
 		}
 	}
 
+	
 
 }
 
@@ -1018,6 +1042,29 @@ void ASCharacter::BeginDiscard(){
 
 
 void ASCharacter::DiscardWeapon(AItemWeapon* ItemWeaponx1){
+	FName TempIDName;
+	if(ItemWeaponx1->Ammo>0){
+		TempIDName=ItemWeaponx1->ItemWeaponRow->UseAmmoID;
+		AItemAmmo* TempAmmo;
+		FTransform TempTransform;
+		TempTransform.SetLocation(FVector::ZeroVector);
+		TempTransform.SetRotation(FQuat(0,0,0,0));
+		TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+
+		TempAmmo=GetWorld()->SpawnActorDeferred<AItemAmmo>(AItemAmmo::StaticClass(),TempTransform);
+		if(TempAmmo){
+			
+			TempAmmo->ID=TempIDName;
+			TempAmmo->SN=GameInstanceRef->GenrateSN();
+			TempAmmo->Amount=ItemWeaponx1->Ammo;	
+			
+			
+			UGameplayStatics::FinishSpawningActor(TempAmmo,TempTransform);
+		}
+		APickupBase* TempPickupBasex1;
+		SpawnPickupItem(TempAmmo,TempPickupBasex1);
+		ItemWeaponx1->Ammo=0;
+	}
 	APickupBase* TempPickupBase;
 	SpawnPickupItem(ItemWeaponx1,TempPickupBase);
 	if (ItemWeaponx1->SightAccActorx1)
@@ -1150,10 +1197,16 @@ void ASCharacter::PickupWeapon(class APickupWeapon* PickupWeaponx1,bool bIsAssig
 
 }
 
+void ASCharacter::BeginPickupItem(){
+	
+	bool bIsSuccess=PickupItem();
+}
+
+
+
 bool ASCharacter::PickupItem(){
 	
 	if(ReadyPickupItem){
-		
 		if(ReadyPickupItem->ItemType==E_ItemType::EIT_Weapon){
 			APickupWeapon* TempWeapon=Cast<APickupWeapon>(ReadyPickupItem);
 			bool TempbIsAssign=false;
@@ -1162,6 +1215,76 @@ bool ASCharacter::PickupItem(){
 			bool bIsSuccess=Cast<AActor>(ReadyPickupItem)->Destroy();
 			return true;
 		}
+		else if(ReadyPickupItem->ItemType==E_ItemType::EIT_Accessories){
+			APickupWeaponAcc* TempWeaponAcc=Cast<APickupWeaponAcc>(ReadyPickupItem);
+			APickupBase* TempPickupBase=Cast<APickupBase>(TempWeaponAcc);
+			if(PickupGoods(TempPickupBase)){
+				bool bIsSuccessx1=Cast<AActor>(ReadyPickupItem)->Destroy();
+				return true;
+			}
+			else{
+				return false;
+
+			}
+		}
+		else if(ReadyPickupItem->ItemType==E_ItemType::EIT_Ammo){
+			APickupAmmo* TempAmmo=Cast<APickupAmmo>(ReadyPickupItem);
+			APickupBase* TempPickupBase=Cast<APickupBase>(TempAmmo);
+			
+			if(PickupGoods(TempPickupBase)){
+				bool bIsSuccessx2=Cast<AActor>(ReadyPickupItem)->Destroy();
+				return true;
+			}
+			else{
+				return false;
+				
+			}
+				
+		}
+		else if(ReadyPickupItem->ItemType==E_ItemType::EIT_Health){
+			APickupHealth* TempHealth=Cast<APickupHealth>(ReadyPickupItem);
+			APickupBase* TempPickupBase=Cast<APickupBase>(TempHealth);
+
+			if(PickupGoods(TempPickupBase)){
+				bool bIsSuccessx3=Cast<AActor>(ReadyPickupItem)->Destroy();
+				return true;
+			}
+			else{
+				return false;
+				
+			}
+		}
+		else if(ReadyPickupItem->ItemType==E_ItemType::EIT_Boost){
+			APickupBoost* TempBoost=Cast<APickupBoost>(ReadyPickupItem);
+			APickupBase* TempPickupBase=Cast<APickupBase>(TempBoost);
+
+
+			if(PickupGoods(TempPickupBase)){
+				bool bIsSuccessx4=Cast<AActor>(ReadyPickupItem)->Destroy();
+				return true;
+			}
+			else{
+				return false;
+				
+			}
+		}
+		else if(ReadyPickupItem->ItemType==E_ItemType::EIT_Helmet||
+		ReadyPickupItem->ItemType==E_ItemType::EIT_Vest||
+		ReadyPickupItem->ItemType==E_ItemType::EIT_Backpack){
+			APickupEquipment* TempEquipment=Cast<APickupEquipment>(ReadyPickupItem);
+			APickupBase* TempPickupBase=Cast<APickupBase>(TempEquipment);
+
+			bool bIsSucceed=PickupEquipment(TempPickupBase);
+			bool bIsSuccessx3=Cast<AActor>(ReadyPickupItem)->Destroy();
+			if(!bIsSucceed){
+				return false;
+			}
+			return true;
+		}
+		
+		
+		
+		
 	}
 	else{
 		return false;
@@ -1170,9 +1293,423 @@ bool ASCharacter::PickupItem(){
 	return false;
 }
 
-void ASCharacter::BeginPickupItem(){
+
+
+bool ASCharacter::PickupGoods(APickupBase* PickupBasex1){
+	if(PlayerStateRef->CheckBackpackCapacity(PickupBasex1->GetWeight())){
+		
+		if(PickupBasex1->ItemType==E_ItemType::EIT_Accessories){
+			AItemWeaponAcc* TempWeaponAcc;
+				FTransform TempTransform;
+				TempTransform.SetLocation(FVector::ZeroVector);
+				TempTransform.SetRotation(FQuat(0,0,0,0));
+				TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+				TempWeaponAcc=GetWorld()->SpawnActorDeferred<AItemWeaponAcc>(AItemWeaponAcc::StaticClass(),TempTransform);
+				if(TempWeaponAcc){
+					
+					
+					TempWeaponAcc->ID=PickupBasex1->ID;
+					
+					TempWeaponAcc->SN=PickupBasex1->SN;
+					TempWeaponAcc->Amount=1;	
+					
+					
+					UGameplayStatics::FinishSpawningActor(TempWeaponAcc,TempTransform);
+				}
+				AItemBase* TempItemBase=Cast<AItemBase>(TempWeaponAcc);
+				PlayerStateRef->AddItemsInBackpack(TempItemBase);
+		}
+		else if(PickupBasex1->ItemType==E_ItemType::EIT_Ammo){
+			PlayerStateRef->UpdateAmmoAmount(PickupBasex1->ID,true,PickupBasex1->Amount);
+
+		}
+		else if(PickupBasex1->ItemType==E_ItemType::EIT_Health){
+			AItemHealth* TempHealth;
+			FTransform TempTransform;
+			TempTransform.SetLocation(FVector::ZeroVector);
+			TempTransform.SetRotation(FQuat(0,0,0,0));
+			TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+			TempHealth=GetWorld()->SpawnActorDeferred<AItemHealth>(AItemHealth::StaticClass(),TempTransform);
+			if(TempHealth){
+				
+				
+				TempHealth->ID=PickupBasex1->ID;
+				
+				TempHealth->SN=PickupBasex1->SN;
+				TempHealth->Amount=PickupBasex1->Amount;	
+				
+				
+				UGameplayStatics::FinishSpawningActor(TempHealth,TempTransform);
+			}
+			AItemBase* TempItemBase=Cast<AItemBase>(TempHealth);
+			PlayerStateRef->AddItemsInBackpack(TempItemBase);
+		}
+		else if(PickupBasex1->ItemType==E_ItemType::EIT_Boost){
+			AItemBoost* TempBoost;
+			FTransform TempTransform;
+			TempTransform.SetLocation(FVector::ZeroVector);
+			TempTransform.SetRotation(FQuat(0,0,0,0));
+			TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+			TempBoost=GetWorld()->SpawnActorDeferred<AItemBoost>(AItemBoost::StaticClass(),TempTransform);
+			if(TempBoost){
+				
+				
+				TempBoost->ID=PickupBasex1->ID;
+				
+				TempBoost->SN=PickupBasex1->SN;
+				TempBoost->Amount=PickupBasex1->Amount;	
+				
+				
+				UGameplayStatics::FinishSpawningActor(TempBoost,TempTransform);
+			}
+			AItemBase* TempItemBasex1=Cast<AItemBase>(TempBoost);
+			PlayerStateRef->AddItemsInBackpack(TempItemBasex1);
+		}
+		
+		return true;
+
+	}
+	else{
+		UE_LOG(LogTemp,Warning,TEXT("NotEnoughCapacity"));
+		return false;
+	}
+	return false;
+}
+
+
+
+
+
+void ASCharacter::UpdateCharacterGunState(){
+
+	if(PlayerStateRef->GetHoldGun()){
+		bIsHoldWeapon=true;
+	}
+	else{
+		bIsHoldWeapon=false;
+	}
+
+
+
+}
+
+void ASCharacter::PlayMontage(E_MontageType MontageType){
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	PlayingMontageType=MontageType;
+	bIsPlayingMontage=true;
+	if(bIsProne){
+		switch (MontageType)
+		{
+			case E_MontageType::EMT_Equip:
+				if (AnimInstance && ProneEquipMontage)
+				{
+					AnimInstance->Montage_Play(ProneEquipMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_UnEquip:
+				if (AnimInstance && ProneUnEquipMontage)
+				{
+					AnimInstance->Montage_Play(ProneUnEquipMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_Reload:
+				if (AnimInstance && ProneReloadMontage)
+				{
+					AnimInstance->Montage_Play(ProneReloadMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_ReloadBullet:
+				if (AnimInstance && ProneReloadMontage)
+				{
+					AnimInstance->Montage_Play(ProneReloadMontage);
+					AnimInstance->Montage_JumpToSection(FName("ReloadBullet"));
+				}
+			break;
+			case E_MontageType::EMT_Fire:
+				if (AnimInstance && ProneFireMontage)
+				{
+					AnimInstance->Montage_Play(ProneFireMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+			case E_MontageType::EMT_Use:
+				if (AnimInstance && ProneUseMontage)
+				{
+					AnimInstance->Montage_Play(ProneUseMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+
+			
+			
+		}
+	}
+	else if(bIsCrouching){
+		switch (MontageType)
+		{
+			case E_MontageType::EMT_Equip:
+				if (AnimInstance && CrouchEquipMontage)
+				{
+					AnimInstance->Montage_Play(CrouchEquipMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_UnEquip:
+				if (AnimInstance && CrouchUnEquipMontage)
+				{
+					AnimInstance->Montage_Play(CrouchUnEquipMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_Reload:
+				if (AnimInstance && CrouchReloadMontage)
+				{
+					AnimInstance->Montage_Play(CrouchReloadMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_ReloadBullet:
+				if (AnimInstance && CrouchReloadMontage)
+				{
+					AnimInstance->Montage_Play(CrouchReloadMontage);
+					AnimInstance->Montage_JumpToSection(FName("ReloadBullet"));
+				}
+			break;
+			case E_MontageType::EMT_Fire:
+				if (AnimInstance && CrouchFireMontage)
+				{
+					AnimInstance->Montage_Play(CrouchFireMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+			case E_MontageType::EMT_Use:
+				if (AnimInstance && CrouchUseMontage)
+				{
+					AnimInstance->Montage_Play(CrouchUseMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+
+			
+			
+		}
+	}
+	else{
+		switch (MontageType)
+		{
+			case E_MontageType::EMT_Equip:
+				if (AnimInstance && EquipMontage)
+				{
+					AnimInstance->Montage_Play(EquipMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_UnEquip:
+				if (AnimInstance && UnEquipMontage)
+				{
+					AnimInstance->Montage_Play(UnEquipMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_Reload:
+				if (AnimInstance && ReloadMontage)
+				{
+					AnimInstance->Montage_Play(ReloadMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+			case E_MontageType::EMT_ReloadBullet:
+				if (AnimInstance && ReloadMontage)
+				{
+					AnimInstance->Montage_Play(ReloadMontage);
+					AnimInstance->Montage_JumpToSection(FName("ReloadBullet"));
+				}
+			break;
+			case E_MontageType::EMT_Fire:
+				if (AnimInstance && FireMontage)
+				{
+					AnimInstance->Montage_Play(FireMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+			case E_MontageType::EMT_Use:
+				if (AnimInstance && UseMontage)
+				{
+					AnimInstance->Montage_Play(UseMontage);
+					AnimInstance->Montage_JumpToSection(FName("Default"));
+				}
+			break;
+
+
+			
+			
+		}
+	}
+
+
+}
+
+void ASCharacter::BeginPlayMontage(){
+	if(PlayerStateRef->GetHoldGun()){
+		PlayMontage(E_MontageType::EMT_UnEquip);
+	}
+}
+
+void ASCharacter::TakeBackWeapon(){
+	bIsHoldWeapon=false;
+	PlayerStateRef->GetHoldGun()->bIsOnHand=false;
+	if(PlayerStateRef->GetHoldGun()->Position==E_WeaponPosition::EWP_Left){
+		PlayerStateRef->SetWeapon1(PlayerStateRef->GetHoldGun());
+		PlayerStateRef->SetHoldGun(nullptr);
+	}
+	else if(PlayerStateRef->GetHoldGun()->Position==E_WeaponPosition::EWP_Right){
+		PlayerStateRef->SetWeapon2(PlayerStateRef->GetHoldGun());
+		PlayerStateRef->SetHoldGun(nullptr);
+	}
+
+}
+
+void ASCharacter::Keyboard1KeyPressed(){
+	ReadyEquipWeapon =PlayerStateRef->GetWeapon1();
+	if(ReadyEquipWeapon){
+		if(PlayerStateRef->GetHoldGun()){
+			PlayMontage(E_MontageType::EMT_UnEquip);
+		}
+		else{
+			PlayMontage(E_MontageType::EMT_Equip);
+		}
+	}
+}
+
+void ASCharacter::Keyboard2KeyPressed(){
+	ReadyEquipWeapon =PlayerStateRef->GetWeapon2();
+	if(ReadyEquipWeapon){
+		if(PlayerStateRef->GetHoldGun()){
+			PlayMontage(E_MontageType::EMT_UnEquip);
+		}
+		else{
+			PlayMontage(E_MontageType::EMT_Equip);
+		}
+	}
+}
+
+
+void ASCharacter::EquipWeapon(){
+	bIsHoldWeapon=true;
+	PlayerStateRef->SetHoldGun(ReadyEquipWeapon);
+	ReadyEquipWeapon->bIsOnHand=true;
+	if(ReadyEquipWeapon->Position==E_WeaponPosition::EWP_Left){
+		PlayerStateRef->SetWeapon1(nullptr);
+		ReadyEquipWeapon=nullptr;
+	}
+	else if(ReadyEquipWeapon->Position==E_WeaponPosition::EWP_Right){
+		PlayerStateRef->SetWeapon2(nullptr);
+		ReadyEquipWeapon=nullptr;
+	}
+
+}
+
+void ASCharacter::DiscardItem(AItemBase* Itemx1){
+	APickupBase* PickupBasex1;
+	SpawnPickupItem(Itemx1,PickupBasex1);
+
+	if(Itemx1->ItemType==E_ItemType::EIT_Ammo){	
+		PlayerStateRef->UpdateAmmoAmount(Itemx1->ID,false,0);
+		
+		
+
+	}
+	if(Itemx1){
+		PlayerStateRef->RemoveItemsInBackpack(Itemx1);
+		bool bIsDestroyed=Cast<AActor>(Itemx1)->Destroy();
 	
-	bool bIsSuccess=PickupItem();
+	}
+}
+
+bool ASCharacter::DiscardEquipment(AItemBase* Itemx1,bool bIsCheck){
+	if(bIsCheck){
+
+	
+		if(Itemx1->ItemType==E_ItemType::EIT_Backpack){
+			if(PlayerStateRef->CheckReplaceBackpack(Itemx1)){
+
+			}
+			else{
+				UE_LOG(LogTemp,Warning,TEXT("Cannot DiscardBackpack"));
+				return false;
+			}
+			
+
+		}
+	}
+	APickupBase* TempPickupBase;
+	SpawnPickupItem(Itemx1,TempPickupBase);
+	PlayerStateRef->RemoveEquipment(Itemx1);
+
+	bool bIsDestroyed=Cast<AActor>(Itemx1)->Destroy();
+	return true;
+}
+
+bool ASCharacter::PickupEquipment(APickupBase* PickupBasex1){
+
+	if(PickupBasex1->ItemType==E_ItemType::EIT_Backpack){
+		if(PlayerStateRef->CheckReplaceBackpack(PickupBasex1)){
+
+		}
+		else{
+			UE_LOG(LogTemp,Warning,TEXT("Cannot PickupBackpack"));
+
+		}
+	}
+
+	//NextSteps
+	AItemBase* CurrentItem=nullptr;
+	TArray<AItemBase*> OwnEquipments=PlayerStateRef->GetEquipments();
+	for(int32 i=0;i<OwnEquipments.Num();i++){
+		if(OwnEquipments[i]->ItemType==PickupBasex1->ItemType){
+			CurrentItem=OwnEquipments[i];
+		}
+	}
+
+
+	if(CurrentItem){
+		bool bIsSucceed= DiscardEquipment(CurrentItem,false);
+	}
+
+	AItemEquipment* TempEquipment;
+	FTransform TempTransform;
+	TempTransform.SetLocation(FVector::ZeroVector);
+	TempTransform.SetRotation(FQuat(0,0,0,0));
+	TempTransform.SetScale3D(FVector(1.f,1.f,1.f));
+	TempEquipment=GetWorld()->SpawnActorDeferred<AItemEquipment>(AItemEquipment::StaticClass(),TempTransform);
+	if(TempEquipment){
+		
+		
+		TempEquipment->ID=PickupBasex1->ID;
+		
+		TempEquipment->SN=PickupBasex1->SN;
+		TempEquipment->Amount=PickupBasex1->Amount;	
+		
+		
+		UGameplayStatics::FinishSpawningActor(TempEquipment,TempTransform);
+	}
+	PlayerStateRef->AddEquipment(TempEquipment);
+	return true;
+
 }
 
 

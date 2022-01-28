@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+
 #include "PUBGAdvancedTutGI.generated.h"
 
 /**
@@ -60,6 +61,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment)
 	FName BackpackName=TEXT("Socket_Backpack");
+
+	FString GenrateSN();
+
+protected:
+
+	
 
 private:
 

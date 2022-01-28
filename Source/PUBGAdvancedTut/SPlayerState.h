@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "Engine/DataTable.h"
+#include "ItemBase.h"
 #include "SPlayerState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeaponChangedSignature,AItemWeapon *, Weapon, E_WeaponPosition, Position, bool, bIsOnHand );
@@ -77,7 +79,22 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool RemoveEquipment(AItemBase* Equipment);
 
+
+//Backpack
 	bool RemoveItemsInBackpack(AItemBase* Item);
+
+	bool CheckBackpackCapacity(int32 AddWeight);
+
+	bool CheckReplaceBackpack(AItemBase* Item);
+
+
+//Ammo
+	void UpdateAmmoObject();
+
+	void UpdateAmmoAmount(FName IDx1,bool bIsAdd,int32 Amountx1);
+
+
+
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemsWeapon, meta = (AllowPrivateAccess = "true"))
@@ -110,6 +127,13 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	int32 KilledAmount;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = GameInstance, meta = (AllowPrivateAccess = "true"))
+	class UPUBGAdvancedTutGI* GameInstanceRef;
+
+	FString ItemEquipmentTablePath;
+
+	UDataTable* ItemEquipmentTableObject;
+
 
 protected:
 
@@ -134,5 +158,5 @@ public:
 	UPROPERTY(BlueprintAssignable,Category="Events")
 	FOnItemsInBackpackChangedSignature OnItemChanged;
 
-
+	FSTR_ItemEquipment* ItemEquipmentRow;
 };

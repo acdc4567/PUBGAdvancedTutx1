@@ -40,7 +40,7 @@ void APickupBase::BeginPlay(){
 
 void APickupBase::InitPickup(E_ItemType ItemTypex1,FText Namex1,FText UI_Prefix1,UStaticMesh* StaticMeshx1 ){
 
-    Init(ItemType,Name);
+    Init(ItemTypex1,Namex1);
     UI_Prefix=UI_Prefix1;
     StaticMesh->SetStaticMesh(StaticMeshx1);
 

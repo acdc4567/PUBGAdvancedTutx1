@@ -45,7 +45,18 @@ struct FSTR_WalkSpeed : public FTableRowBase
 	
 };
 
+UENUM(BlueprintType)
+enum class E_MontageType : uint8
+{
+	EMT_Equip UMETA(DisplayName = "Equip"),
+	EMT_UnEquip UMETA(DisplayName = "UnEquip"),
+	EMT_Reload UMETA(DisplayName = "Reload"),
+	EMT_ReloadBullet UMETA(DisplayName = "ReloadBullet"),
+	EMT_Fire UMETA(DisplayName = "Fire"),
+	EMT_Use UMETA(DisplayName = "Use")
 
+	
+};
 
 
 UCLASS()
@@ -157,6 +168,11 @@ protected:
 
 	void BeginDiscard();
 
+	void DiscardItem(AItemBase* Itemx1);
+
+	bool DiscardEquipment(AItemBase* Itemx1,bool bIsCheck);
+
+	//Items->Pickup
 	void BeginPickupItem();
 
 	void DiscardWeapon(AItemWeapon* ItemWeaponx1);
@@ -164,6 +180,32 @@ protected:
 	void PickupWeapon(class APickupWeapon* PickupWeaponx1,bool bIsAssign,E_WeaponPosition Position1);
 
 	bool PickupItem();
+
+	bool PickupGoods(APickupBase* PickupBasex1);
+
+	bool PickupEquipment(APickupBase* PickupBasex1);
+
+
+	//Play Animation
+	UFUNCTION(BlueprintCallable)
+	void PlayMontage(E_MontageType MontageType);
+	
+	void BeginPlayMontage();
+	
+	//WeaponChanged
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateCharacterGunState();
+
+	UFUNCTION(BlueprintCallable)
+	void TakeBackWeapon();
+
+	UFUNCTION(BlueprintCallable)
+	void EquipWeapon();
+
+	void Keyboard1KeyPressed();
+
+	void Keyboard2KeyPressed();
 
 public:	
 	// Called every frame
@@ -239,12 +281,52 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
 	bool bEnableMove=true;
 
-	UPROPERTY(Editanywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ProneEquipMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ProneUnEquipMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ProneReloadMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ProneFireMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ProneUseMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* CrouchEquipMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* CrouchUnEquipMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* CrouchReloadMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* CrouchFireMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* CrouchUseMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* EquipMontage;
 
-	UPROPERTY(Editanywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* UnEquipMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ReloadMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* UseMontage;
+
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DataTable, meta = (AllowPrivateAccess = "true"))
 	UDataTable* DT_ProneTime;
 
@@ -338,6 +420,11 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PlayerState, meta = (AllowPrivateAccess = "true"))
 	APickupBase* ReadyPickupItem;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PlayerAnimState, meta = (AllowPrivateAccess = "true"))
+	E_MontageType PlayingMontageType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	AItemWeapon* ReadyEquipWeapon;
 
 
 public:
