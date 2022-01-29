@@ -10,6 +10,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class USkeletalMeshComponent;
 class UAnimMontage;
 class UDataTable;
 class APickupBase;
@@ -43,6 +44,16 @@ struct FSTR_WalkSpeed : public FTableRowBase
 	
 
 	
+};
+
+USTRUCT(BlueprintType)
+struct FSTR_ArmsLocation : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector Location;
+
 };
 
 UENUM(BlueprintType)
@@ -207,6 +218,19 @@ protected:
 
 	void Keyboard2KeyPressed();
 
+	//WeaponAccChanged
+	
+	bool EquipAccessories(AItemBase* ItemBasex1,bool bIsFromGround,AItemWeapon* Weaponx1);
+
+	//WeaponAccDiscard
+	bool RemoveAccessories(AItemBase* ItemAccx1,bool bIsToGround,AItemWeapon* Weaponx1);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void HoldAiming(bool bForward);
+
+	void SwitchCamera(bool bIsFirst);
+
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -220,6 +244,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* FPSCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* FPSArm;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed=600.f;
@@ -251,8 +281,14 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsHoldWeapon;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	bool bIsHoldAiming;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsAiming;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	bool bIsSightAiming=false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsFiring;
@@ -333,6 +369,10 @@ private:
 	FString ProneTimeTablePath;
 
 	UDataTable* ProneTimeTableObject;
+
+	FString ArmsLocationTablePath;
+
+	UDataTable* ArmsLocationTableObject;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DataTable, meta = (AllowPrivateAccess = "true"))
 	UDataTable* DT_WalkSpeed;

@@ -14,13 +14,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChangedSignature, float, Va
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnergyChangedSignature, float, Value );
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEquipmentChangedSignature, AItemBase*, Equipment,bool,bIsAdd );
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnItemsInBackpackChangedSignature, AItemBase*, Item,bool,bIsAdd );
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnWeaponAccChangedSignature, AItemWeapon*, Weapon, bool, bIsRemove, AItemWeaponAcc*, AccObj, E_WeaponAccType, AccType);
 
 class AItemBase;
 class AItemWeapon;
-
-
-
 
 /**
  * 
@@ -31,13 +28,14 @@ class PUBGADVANCEDTUT_API ASPlayerState : public APlayerState
 	GENERATED_BODY()
 	
 public:
-
+	ASPlayerState();
 
 //Getter Functions
 	AItemWeapon* GetWeapon1();
 
 	AItemWeapon* GetWeapon2();
 
+	UFUNCTION(BlueprintPure)
 	AItemWeapon* GetHoldGun();
 
 	int32 GetAmmo556();
@@ -93,8 +91,9 @@ public:
 
 	void UpdateAmmoAmount(FName IDx1,bool bIsAdd,int32 Amountx1);
 
+//WeaponAcc
 
-
+	void UpdateWeaponAcc(E_WeaponPosition Positionx1,E_WeaponAccType AccTypex1,AItemWeaponAcc* ItemWeaponAccx1);
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemsWeapon, meta = (AllowPrivateAccess = "true"))
@@ -136,7 +135,8 @@ private:
 
 
 protected:
-
+// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 
 public:
 
@@ -157,6 +157,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable,Category="Events")
 	FOnItemsInBackpackChangedSignature OnItemChanged;
+
+	UPROPERTY(BlueprintAssignable,Category="Events")
+	FOnWeaponAccChangedSignature OnWeaponAccChanged;
+
 
 	FSTR_ItemEquipment* ItemEquipmentRow;
 };

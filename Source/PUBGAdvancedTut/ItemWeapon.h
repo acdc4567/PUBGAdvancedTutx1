@@ -42,7 +42,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateButtstock(AItemWeaponAcc* ButtstockAccActor);
 
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon)
+	USkeletalMeshComponent* SkeletalMesh;
 
 protected:
 
@@ -56,8 +57,7 @@ protected:
 
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* SkeletalMesh;
+	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* Mag;

@@ -23,6 +23,9 @@ public:
 
 	FSTR_ItemWeaponAcc* ItemWeaponAccRow;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DataTable)
+	E_WeaponAccType AccType;
+
 protected:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -34,7 +37,6 @@ private:
 
 	UDataTable* ItemWeaponAccTableObject;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DataTable, meta = (AllowPrivateAccess = "true"))
-	E_WeaponAccType AccType;
+	
 	
 };

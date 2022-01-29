@@ -8,6 +8,21 @@
 
 #include "PUBGAdvancedTutGI.h"
 
+ASPlayerState::ASPlayerState(){
+    ItemEquipmentTablePath=TEXT("DataTable'/Game/Blueprint/Datas/DataTable/DT_ItemEquipment.DT_ItemEquipment'");
+    ItemEquipmentTableObject = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ItemEquipmentTablePath));	
+       
+}
+
+void ASPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+    GameInstanceRef=Cast<UPUBGAdvancedTutGI>(UGameplayStatics::GetGameInstance(GetWorld()));
+	
+}
+
+
 AItemWeapon* ASPlayerState:: GetWeapon1(){
     return Weapon1;
 }
@@ -119,10 +134,7 @@ bool ASPlayerState::RemoveItemsInBackpack(AItemBase* Item){
 
 
 bool ASPlayerState::CheckBackpackCapacity(int32 AddWeight){
-    GameInstanceRef=Cast<UPUBGAdvancedTutGI>(UGameplayStatics::GetGameInstance(GetWorld()));
-	ItemEquipmentTablePath=TEXT("DataTable'/Game/Blueprint/Datas/DataTable/DT_ItemEquipment.DT_ItemEquipment'");
-	ItemEquipmentTableObject = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ItemEquipmentTablePath));	
-
+    
     int32 TotalCapacity=GameInstanceRef->DefaultCapacity;
     int32 ItemsWeight=0;
     for(int32 i=0;i<Equipments.Num();i++){
@@ -276,6 +288,7 @@ void ASPlayerState::UpdateAmmoAmount(FName IDx1,bool bIsAdd,int32 Amountx1){
 
 
 bool ASPlayerState::CheckReplaceBackpack(AItemBase* Item){
+    
     int32 ItemsWeight=0;
     int32 PickupCapacity=0;
     TArray<AItemBase*> ItemsInBag= GetItemsInBackpack();
@@ -283,23 +296,74 @@ bool ASPlayerState::CheckReplaceBackpack(AItemBase* Item){
         ItemsWeight+= ItemsInBag[i]->GetWeight();
     }
     if(Item){
-        ItemEquipmentTablePath=TEXT("DataTable'/Game/Blueprint/Datas/DataTable/DT_ItemEquipment.DT_ItemEquipment'");
-        ItemEquipmentTableObject = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *ItemEquipmentTablePath));	
         ItemEquipmentRow=ItemEquipmentTableObject->FindRow<FSTR_ItemEquipment>(Item->ID, TEXT(""));
-        PickupCapacity= ItemEquipmentRow->Capacity;
+        if(ItemEquipmentRow){
+            PickupCapacity= ItemEquipmentRow->Capacity; 
+        }
+        
     }
     else{
         PickupCapacity=0;
     }
-    if(PickupCapacity+GameInstanceRef->DefaultCapacity>=ItemsWeight){
-        return true;
+    if(GameInstanceRef){
+        if(PickupCapacity+GameInstanceRef->DefaultCapacity>=ItemsWeight){
+            return true;
+        }
     }
+    
     return false;
 
 }
 
 
 
+
+void ASPlayerState::UpdateWeaponAcc(E_WeaponPosition Positionx1,E_WeaponAccType AccTypex1,AItemWeaponAcc* ItemWeaponAccx1){
+    AItemWeapon* LocalWeapon=nullptr;
+    bool bIsRemove=false;
+    if(Positionx1==E_WeaponPosition::EWP_Left){
+        if(Weapon1){
+            LocalWeapon=Weapon1;
+
+        }
+        else{
+            LocalWeapon=HoldGun;
+        }
+    }
+    else if(Positionx1==E_WeaponPosition::EWP_Right){
+        if(Weapon2){
+            LocalWeapon=Weapon1;
+
+        }
+        else{
+            LocalWeapon=HoldGun;
+        }
+    }
+    if(AccTypex1==E_WeaponAccType::EWAT_Sight){
+        LocalWeapon->UpdateSight(ItemWeaponAccx1);
+    }
+    else if(AccTypex1==E_WeaponAccType::EWAT_Muzzle){
+        LocalWeapon->UpdateMuzzle(ItemWeaponAccx1);
+    }
+    else if(AccTypex1==E_WeaponAccType::EWAT_Foregrip){
+        LocalWeapon->UpdateForegrip(ItemWeaponAccx1);
+    }
+    else if(AccTypex1==E_WeaponAccType::EWAT_Mag){
+        LocalWeapon->UpdateMag(ItemWeaponAccx1);
+    }
+    else if(AccTypex1==E_WeaponAccType::EWAT_Buttstock){
+        LocalWeapon->UpdateButtstock(ItemWeaponAccx1);
+    }
+
+    if(ItemWeaponAccx1){
+
+    }
+    else{
+        bIsRemove=true;
+        
+    }
+    OnWeaponAccChanged.Broadcast(LocalWeapon, bIsRemove, ItemWeaponAccx1, AccTypex1);
+}
 
 
 
