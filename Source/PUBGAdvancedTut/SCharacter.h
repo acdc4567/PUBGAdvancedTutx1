@@ -90,7 +90,7 @@ public:
 
 	void PlayTPPFireMontage();
 
-	
+	void ReverseHoldAiming();
 	
 protected:
 	// Called when the game starts or when spawned
@@ -237,7 +237,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SwitchCamera(bool bIsFirst);
 
-	void ReverseHoldAiming();
+	
 
 	void ShootModeKeyPressed();
 
@@ -248,6 +248,10 @@ protected:
 	void ReleaseFire();
 
 	void SetIsSightAiming(bool bIsSightAimingx1);
+
+	void StopAimState();
+
+	void ReloadKeyPressed();
 
 
 public:	
@@ -499,6 +503,7 @@ public:
 	FORCEINLINE bool GetIsDead() const {return bIsDead;}
 	FORCEINLINE bool GetIsHoldWeapon() const {return bIsHoldWeapon;}
 	FORCEINLINE bool GetIsAiming() const {return bIsAiming;}
+	FORCEINLINE bool GetIsSightAiming() const {return bIsSightAiming;}
 	FORCEINLINE bool GetIsFiring() const {return bIsFiring;}
 	FORCEINLINE bool GetIsEquip() const {return bIsEquip;}
 	FORCEINLINE bool GetIsReload() const {return bIsReload;}
@@ -521,4 +526,6 @@ public:
 	USkeletalMeshComponent* FPSArm;
 
 	void PlayFPSFireMontage();
+
+	void PlayReloadxMontage();
 };

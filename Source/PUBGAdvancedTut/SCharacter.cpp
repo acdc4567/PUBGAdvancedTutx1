@@ -201,6 +201,9 @@ void ASCharacter::WalkKeyReleased() {
 }
 
 void ASCharacter::RunKeyPressed() { 
+	if(!bIsSightAiming){
+		ReverseHoldAiming();
+	}
 	bRunPressed = true;
 	SmoothIncrease();
 }
@@ -283,6 +286,10 @@ void ASCharacter::AimKeyPressed(){
 			UpdateWeaponDisplay(TempName);
 		}
 
+		if(PlayerStateRef->GetHoldGun()){
+			PlayerStateRef->GetHoldGun()->FireTime=0.f;
+		}
+
 	}
 	
 }
@@ -300,9 +307,10 @@ void ASCharacter::AimKeyReleased(){
 				bIsHoldAiming=false;
 			}
 			else{
+				bIsAiming=false;
 				if(bIsHoldAiming){
 					bIsHoldAiming=false;
-					bIsAiming=false;
+					
 					HoldAiming(false);
 					UpdateWeaponDisplay(CalculateHoldGunSocket());
 				}
@@ -322,9 +330,10 @@ void ASCharacter::ReverseHoldAiming(){
 		SetIsSightAiming(false);
 	}
 	else{
+		bIsAiming=false;
 		if(bIsHoldAiming){
 			bIsHoldAiming=false;
-			bIsAiming=false;
+			
 			HoldAiming(false);
 			UpdateWeaponDisplay(CalculateHoldGunSocket());
 		}
@@ -412,7 +421,7 @@ void ASCharacter::Tick(float DeltaTime)
 	
 	TargetingItem();
 	
-
+	StopAimState();
 }
 
 // Called to bind functionality to input
@@ -461,7 +470,8 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Fire",IE_Pressed,this,&ASCharacter::FireKeyPressed);
 	PlayerInputComponent->BindAction("Fire",IE_Released,this,&ASCharacter::FireKeyReleased);
 
-
+	PlayerInputComponent->BindAction("Reloadx",IE_Pressed,this,&ASCharacter::ReloadKeyPressed);
+	
 }
 
 bool ASCharacter::LimitPitchAngle(float Axis){
@@ -1521,7 +1531,7 @@ void ASCharacter::PlayMontage(E_MontageType MontageType){
 			case E_MontageType::EMT_Fire:
 				if (AnimInstance && ProneFireMontage)
 				{
-					AnimInstance->Montage_Play(ProneFireMontage);
+					AnimInstance->Montage_Play(ProneFireMontage,0.466f);
 					AnimInstance->Montage_JumpToSection(FName("Default"));
 				}
 			break;
@@ -1575,7 +1585,7 @@ void ASCharacter::PlayMontage(E_MontageType MontageType){
 			case E_MontageType::EMT_Fire:
 				if (AnimInstance && CrouchFireMontage)
 				{
-					AnimInstance->Montage_Play(CrouchFireMontage);
+					AnimInstance->Montage_Play(CrouchFireMontage,2.f);
 					AnimInstance->Montage_JumpToSection(FName("Default"));
 				}
 			break;
@@ -1629,7 +1639,7 @@ void ASCharacter::PlayMontage(E_MontageType MontageType){
 			case E_MontageType::EMT_Fire:
 				if (AnimInstance && FireMontage)
 				{
-					AnimInstance->Montage_Play(FireMontage);
+					AnimInstance->Montage_Play(FireMontage,2.f);
 					AnimInstance->Montage_JumpToSection(FName("Default"));
 				}
 			break;
@@ -2113,15 +2123,42 @@ void ASCharacter::PlayFPSFireMontage(){
 }
 
 void ASCharacter::PlayTPPFireMontage(){
-	UAnimInstance* AnimInstancex = GetMesh()->GetAnimInstance();
-	if(AnimInstancex&&FireMontage){
-		AnimInstancex->Montage_Play(FireMontage);
-		AnimInstancex->Montage_JumpToSection(FName("Default"));
-				
-	}
+	PlayMontage(E_MontageType::EMT_Fire);
 
 
 }
+
+void ASCharacter::StopAimState(){
+	if(!bIsHoldAiming&&!bIsSightAiming){
+		if(PlayerStateRef->GetHoldGun()){
+			if(PlayerStateRef->GetHoldGun()->FireTime>0){
+				if(GetWorld()->GetTimeSeconds()-PlayerStateRef->GetHoldGun()->FireTime>3.f){
+					bIsAiming=0;
+					PlayerStateRef->GetHoldGun()->FireTime=0.f;
+				}
+			}
+		}
+	}
+}
+
+void ASCharacter::ReloadKeyPressed(){
+	if((PlayerStateRef->GetHoldGun()&&bEnableMove)&&!bAltKeyPressed&&!(GetCharacterMovement()->IsFalling())){
+		if(!bIsPlayingMontage||PlayingMontageType==E_MontageType::EMT_Fire){
+			if(PlayerStateRef->GetHoldGun()){
+				PlayerStateRef->GetHoldGun()->ReloadClip();
+			}
+		}	
+	
+	
+	}	
+}
+
+void ASCharacter::PlayReloadxMontage(){
+	PlayMontage(E_MontageType::EMT_Reload);
+}
+
+
+
 
 
 

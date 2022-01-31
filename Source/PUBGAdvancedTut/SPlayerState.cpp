@@ -365,6 +365,19 @@ void ASPlayerState::UpdateWeaponAcc(E_WeaponPosition Positionx1,E_WeaponAccType 
     OnWeaponAccChanged.Broadcast(LocalWeapon, bIsRemove, ItemWeaponAccx1, AccTypex1);
 }
 
+int32 ASPlayerState::GetAmmoAmount(FName IDx){
+
+    if(IDx==TEXT("1")){
+        return GetAmmo556();
+    }
+    else{
+        return GetAmmo762();
+    }
+    return 0;
+
+
+}
+
 
 
 

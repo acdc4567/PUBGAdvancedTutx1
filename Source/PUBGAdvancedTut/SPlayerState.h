@@ -95,6 +95,10 @@ public:
 
 	void UpdateWeaponAcc(E_WeaponPosition Positionx1,E_WeaponAccType AccTypex1,AItemWeaponAcc* ItemWeaponAccx1);
 
+//Ammo
+
+	int32 GetAmmoAmount(FName IDx);
+
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ItemsWeapon, meta = (AllowPrivateAccess = "true"))
 	AItemWeapon* Weapon1;

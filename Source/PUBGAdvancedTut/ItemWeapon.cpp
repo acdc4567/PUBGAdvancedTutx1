@@ -181,6 +181,7 @@ void AItemWeapon::PlayFireFlash(){
             if (FireFlash)
 			{
                 const FTransform SocketTransform = SkeletalMesh->GetSocketTransform(TEXT("Socket_Muzzle"));
+                
                 UGameplayStatics::SpawnEmitterAtLocation( GetWorld(), FireFlash, SocketTransform.GetLocation());
             }
         }
@@ -189,6 +190,7 @@ void AItemWeapon::PlayFireFlash(){
         FireFlash = ItemWeaponRow->FireFlash;
         if (FireFlash) {
             const FTransform SocketTransform = SkeletalMesh->GetSocketTransform(TEXT("Socket_Muzzle"));
+            
             UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FireFlash, SocketTransform.GetLocation());
         }
     }
@@ -225,7 +227,7 @@ void AItemWeapon::AutoFire(){
         if(ShootModex1==E_ShootMode::ESM_Auto){
             GetWorldTimerManager().SetTimer(TH_FireTimerInProgress, this, &AItemWeapon::AutoFire, FireInterval);
         }
-        if(Ammo>=0){
+        if(Ammo>0){
             PlayFireSound();
             if(bCanPlayFiringFlash){
                 PlayFireFlash();
@@ -240,7 +242,9 @@ void AItemWeapon::AutoFire(){
             else{
                 CharacterRef->PlayTPPFireMontage();
             }
-            //--Ammo;
+
+            FireTime=GetWorld()->GetTimeSeconds();
+            --Ammo;
         }
         else{
             UE_LOG(LogTemp,Warning,TEXT("NoBullets"));
@@ -255,6 +259,51 @@ void AItemWeapon::ReleaseFire(){
 
 
 }
+
+int32 AItemWeapon::CheckAmmoAmount(){
+    int32 ClipSize=0;
+    int32 Need=0;
+    int32 RemainAmount=MyPlayerStateRef->GetAmmoAmount(ItemWeaponRow->UseAmmoID);
+    if(RemainAmount>0){
+        if(MagAccActorx1){
+            ClipSize=MagAccActorx1->ItemWeaponAccRow->ClipCapacity;
+        }
+        else{
+            ClipSize=ItemWeaponRow->ClipSize;
+        }
+
+        Need=ClipSize-Ammo;
+        if(Need>0){
+            return FMath::Clamp(Need,1,RemainAmount);
+        }
+        else{
+            return 0;
+        }
+    }
+    else{
+        return 0;
+    }
+
+    return 0;
+}
+
+void AItemWeapon::ReloadClip(){
+
+    if(CheckAmmoAmount()>0){
+        CharacterRef->PlayReloadxMontage();
+    }
+    if(CharacterRef->GetIsAiming()||CharacterRef->GetIsSightAiming()){
+        CharacterRef->ReverseHoldAiming();
+    }
+
+}
+
+void AItemWeapon::FilledClip(){
+    int32 CheckedAmmoAmt=CheckAmmoAmount();
+    Ammo+=CheckedAmmoAmt;
+    MyPlayerStateRef->UpdateAmmoAmount(ItemWeaponRow->UseAmmoID,0,CheckedAmmoAmt);
+}
+
 
 
 

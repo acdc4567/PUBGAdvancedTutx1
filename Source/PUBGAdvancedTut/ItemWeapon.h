@@ -55,6 +55,13 @@ public:
 
 	void ReleaseFire();
 
+	int32 CheckAmmoAmount();
+
+	void ReloadClip();
+
+	UFUNCTION(BlueprintCallable)
+	void FilledClip();
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -108,6 +115,8 @@ private:
 	UPUBGAdvancedTutGI* MyGameInstanceRef;
 
 	ASPlayerController* MyPlayerControllerRef;
+
+	
 	
 
 public:
@@ -142,7 +151,8 @@ public:
 
 	bool bCanPlayFiringFlash=true;
 
-
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
+	float FireTime;
 
 	
 
