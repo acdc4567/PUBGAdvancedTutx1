@@ -75,67 +75,69 @@ void ASCharacter::BeginPlay()
 }
 
 void ASCharacter::MoveForward(float AxisValue){
+	if(!(bIsProne&&bIsAiming)){
+
 	
-    if ((Controller != nullptr) && (AxisValue != 0.0f)) {
-        FRotator Rotation { Controller->GetControlRotation() };
-        if (bAltKeyPressed) {
-            Rotation = AltKeyPressedRotation;
-        } else {
-            Rotation = Controller->GetControlRotation();
-        }
+		if ((Controller != nullptr) && (AxisValue != 0.0f)) {
+			FRotator Rotation { Controller->GetControlRotation() };
+			if (bAltKeyPressed) {
+				Rotation = AltKeyPressedRotation;
+			} else {
+				Rotation = Controller->GetControlRotation();
+			}
 
-        const FRotator YawRotation { 0, Rotation.Yaw, 0 };
-        SmoothIncrease();
-        const FVector Direction { FRotationMatrix { YawRotation }.GetUnitAxis(EAxis::X) };
-        
-		if(bEnableMove){
-			HandleWalkSpeedFromTable();
-			AddMovementInput(Direction, AxisValue);
-		}	
+			const FRotator YawRotation { 0, Rotation.Yaw, 0 };
+			SmoothIncrease();
+			const FVector Direction { FRotationMatrix { YawRotation }.GetUnitAxis(EAxis::X) };
+			
+			if(bEnableMove){
+				HandleWalkSpeedFromTable();
+				AddMovementInput(Direction, AxisValue);
+			}	
+			
 		
-    
+		}
+		if(MoveForwardAxis!=AxisValue){
+			MoveForwardAxis=AxisValue;
+			UpdateCameraHeight();
+			FName TempName=CalculateHoldGunSocket();
+			UpdateWeaponDisplay(TempName); 
+		}
 	}
-	if(MoveForwardAxis!=AxisValue){
-		MoveForwardAxis=AxisValue;
-		UpdateCameraHeight();
-		FName TempName=CalculateHoldGunSocket();
-		UpdateWeaponDisplay(TempName); 
-	}
-
 }
 
 
 
 
 void ASCharacter::MoveRight(float AxisValue){
-	
-    if ((Controller != nullptr) && (AxisValue != 0.0f)) {
+	if(!(bIsProne&&bIsAiming)){
+		if ((Controller != nullptr) && (AxisValue != 0.0f)) {
 
-        // find out which way is forward
-        FRotator Rotation { Controller->GetControlRotation() };
+			// find out which way is forward
+			FRotator Rotation { Controller->GetControlRotation() };
 
-        if (bAltKeyPressed) {
-            Rotation = AltKeyPressedRotation;
-        } else {
-            Rotation = Controller->GetControlRotation();
-        }
-        const FRotator YawRotation { 0, Rotation.Yaw, 0 };
-        SmoothIncrease();
-        const FVector Direction { FRotationMatrix { YawRotation }.GetUnitAxis(EAxis::Y) };
+			if (bAltKeyPressed) {
+				Rotation = AltKeyPressedRotation;
+			} else {
+				Rotation = Controller->GetControlRotation();
+			}
+			const FRotator YawRotation { 0, Rotation.Yaw, 0 };
+			SmoothIncrease();
+			const FVector Direction { FRotationMatrix { YawRotation }.GetUnitAxis(EAxis::Y) };
 
-        if (bEnableMove) {
-			HandleWalkSpeedFromTable();
-            AddMovementInput(Direction, AxisValue);
-        }
+			if (bEnableMove) {
+				HandleWalkSpeedFromTable();
+				AddMovementInput(Direction, AxisValue);
+			}
 
-    }
-	if(MoveRightAxis!=AxisValue){
-		MoveRightAxis=AxisValue;
-		UpdateCameraHeight();
-		FName TempName=CalculateHoldGunSocket();
-		UpdateWeaponDisplay(TempName);
+		}
+		if(MoveRightAxis!=AxisValue){
+			MoveRightAxis=AxisValue;
+			UpdateCameraHeight();
+			FName TempName=CalculateHoldGunSocket();
+			UpdateWeaponDisplay(TempName);
+		}
 	}
-
 }
 
 void ASCharacter::SmoothIncrease(){
@@ -171,6 +173,7 @@ void ASCharacter::CrouchKeyPressed(){
 	if(bIsProne){
 		bIsProne=false;
 		bIsCrouching=true;
+		ReverseHoldAiming();
 		HandleProneTimeFromTable(3,2);
 	}
 	else if(bIsCrouching){
@@ -210,18 +213,21 @@ void ASCharacter::ProneKeyPressed(){
 	
 	if(bIsProne){
 		bIsProne=false;
+		ReverseHoldAiming();
 		HandleProneTimeFromTable(3,1);
 	}
 	else if(bIsCrouching){
+		bIsAiming=false;
 		bIsCrouching=false;
 		bIsProne=true;
 		
-		AimKeyReleased();
+		ReverseHoldAiming();
 		HandleProneTimeFromTable(2,3);
 	}
 	else{
+		bIsAiming=false;
 		bIsProne=true;
-		AimKeyReleased();
+		ReverseHoldAiming();
 		HandleProneTimeFromTable(1,3);
 	}
 	LimitPitchAngle(0.f);
@@ -239,47 +245,88 @@ FRotator ASCharacter::GetControllerxRotation(){
 }
 
 void ASCharacter::JumpKeyPressed(){
-	if(!bIsAiming){
+	
 
-		if (bIsProne) { 
-			bIsProne=false;
-			bIsCrouching=true;
-			HandleProneTimeFromTable(3,2);
-		}
-		else if(bIsCrouching){
-			bIsCrouching=false;
-		}
-		else{
-			Jump();
-		}
-		UpdateCameraHeight();
+	if (bIsProne) { 
+		bIsProne=false;
+		bIsCrouching=true;
+		ReverseHoldAiming();
+		HandleProneTimeFromTable(3,2);
 	}
+	else if(bIsCrouching){
+		bIsCrouching=false;
+	}
+	else{
+		Jump();
+	}
+	UpdateCameraHeight();
+	
 }
 
 void ASCharacter::AimKeyPressed(){
-	if(bIsHoldWeapon){
-		bIsHoldAiming=true;
-		bIsAiming=true;
-		HoldAiming(true);
-		FName TempName=CalculateHoldGunSocket();
-		UpdateWeaponDisplay(TempName);
-	}
+	if(!(bIsProne&&(MoveForwardAxis!=0||MoveRightAxis!=0))&&!bIsSightAiming&&(!bIsPlayingMontage||PlayingMontageType==E_MontageType::EMT_Fire)){
 
 	
+		RightPressedTime=GetWorld()->GetTimeSeconds();
+
+		if(bIsHoldWeapon){
+			bIsHoldAiming=true;
+			bIsAiming=true;
+			HoldAiming(true);
+			FName TempName=CalculateHoldGunSocket();
+			UpdateWeaponDisplay(TempName);
+		}
+
+	}
 	
 }
 
 void ASCharacter::AimKeyReleased(){
-	if(bIsHoldAiming){
-		bIsHoldAiming=false;
-		bIsAiming=false;
-		HoldAiming(false);
-		FName TempName=CalculateHoldGunSocket();
-		UpdateWeaponDisplay(TempName);
+	if(bIsHoldWeapon){
+		if(bIsSightAiming){
+			SwitchCamera(false);
+			HoldAiming(false);
+			bIsSightAiming=false;
+		}
+		else{
+			if(GetWorld()->GetTimeSeconds()-RightPressedTime<.25f){
+				bIsSightAiming=true;
+				bIsHoldAiming=false;
+			}
+			else{
+				if(bIsHoldAiming){
+					bIsHoldAiming=false;
+					bIsAiming=false;
+					HoldAiming(false);
+					UpdateWeaponDisplay(CalculateHoldGunSocket());
+				}
+			}
+		}
 	}
-	
+
 	
 }
+
+
+
+void ASCharacter::ReverseHoldAiming(){
+	if(bIsSightAiming){
+		SwitchCamera(false);
+		HoldAiming(false);
+		bIsSightAiming=false;
+	}
+	else{
+		if(bIsHoldAiming){
+			bIsHoldAiming=false;
+			bIsAiming=false;
+			HoldAiming(false);
+			UpdateWeaponDisplay(CalculateHoldGunSocket());
+		}
+	}
+	
+
+}
+
 
 void ASCharacter::EnableMove(){
 	bEnableMove=true;
@@ -1054,7 +1101,7 @@ void ASCharacter::CompleteSpawnPickupItem(APickupBase* PickupItemx1){
 }
 
 void ASCharacter::BeginDiscard(){
-	if(!bIsProne){
+	if(!bIsProne&&!bIsSightAiming){
 		if(!bIsPlayingMontage){
 			if(PlayerStateRef->GetHoldGun()){
 				DiscardWeapon(PlayerStateRef->GetHoldGun());
@@ -1596,6 +1643,8 @@ void ASCharacter::PlayMontage(E_MontageType MontageType){
 
 void ASCharacter::BeginPlayMontage(){
 	if(PlayerStateRef->GetHoldGun()){
+		bIsAiming=false;
+		ReverseHoldAiming();
 		PlayMontage(E_MontageType::EMT_UnEquip);
 	}
 }
@@ -1617,6 +1666,8 @@ void ASCharacter::TakeBackWeapon(){
 void ASCharacter::Keyboard1KeyPressed(){
 	ReadyEquipWeapon =PlayerStateRef->GetWeapon1();
 	if(ReadyEquipWeapon){
+		bIsAiming=false;
+		ReverseHoldAiming();
 		if(PlayerStateRef->GetHoldGun()){
 			PlayMontage(E_MontageType::EMT_UnEquip);
 		}
@@ -1629,6 +1680,8 @@ void ASCharacter::Keyboard1KeyPressed(){
 void ASCharacter::Keyboard2KeyPressed(){
 	ReadyEquipWeapon =PlayerStateRef->GetWeapon2();
 	if(ReadyEquipWeapon){
+		bIsAiming=false;
+		ReverseHoldAiming();
 		if(PlayerStateRef->GetHoldGun()){
 			PlayMontage(E_MontageType::EMT_UnEquip);
 		}
@@ -1990,6 +2043,7 @@ void ASCharacter::SwitchCamera(bool bIsFirst){
 	}
 
 }
+
 
 
 

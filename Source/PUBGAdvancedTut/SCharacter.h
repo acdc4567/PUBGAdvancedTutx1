@@ -228,7 +228,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void HoldAiming(bool bForward);
 
+	UFUNCTION(BlueprintCallable)
 	void SwitchCamera(bool bIsFirst);
+
+	void ReverseHoldAiming();
 
 
 public:	
@@ -465,6 +468,8 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
 	AItemWeapon* ReadyEquipWeapon;
+
+	float RightPressedTime=0.f;
 
 
 public:
