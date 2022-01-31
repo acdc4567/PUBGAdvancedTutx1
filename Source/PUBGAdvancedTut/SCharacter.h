@@ -233,6 +233,14 @@ protected:
 
 	void ReverseHoldAiming();
 
+	void ShootModeKeyPressed();
+
+	void FireKeyPressed();
+
+	void FireKeyReleased();
+
+	void ReleaseFire();
+
 
 public:	
 	// Called every frame

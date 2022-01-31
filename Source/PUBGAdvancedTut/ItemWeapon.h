@@ -45,6 +45,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon)
 	USkeletalMeshComponent* SkeletalMesh;
 
+	void SwitchShootMode();
+
+	void PressFire();
+
+	void AutoFire();
+
+	void ReleaseFire();
+
 protected:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -87,6 +95,7 @@ private:
 
 	UDataTable* ItemWeaponTableObject;
 
+	float FireInterval;
 	
 
 public:
@@ -111,5 +120,14 @@ public:
 	AItemWeaponAcc* ForegripAccActorx1;
 
 	AItemWeaponAcc* ButtstockAccActorx1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon,meta=(ExposeOnSpawn="true"))
+	E_ShootMode ShootModex1;
+
+	FGate FireGate;
+
+	FTimerHandle TH_FireTimerInProgress;
+
+	
 
 };

@@ -68,6 +68,8 @@ void AItemWeapon::OnConstruction(const FTransform& Transform){
         Buttstock->SetStaticMesh(ItemWeaponRow->DefaultButtstock);
         Buttstock->AttachToComponent(SkeletalMesh,FAttachmentTransformRules(EAttachmentRule::SnapToTarget,EAttachmentRule::KeepWorld,EAttachmentRule::KeepRelative, true),TEXT("Socket_Buttstock"));
     }
+
+    FireInterval=ItemWeaponRow->FiringInterval;
     
 }
 
@@ -177,6 +179,58 @@ void AItemWeapon::PlayFireFlash(){
         }
     }
 }
+
+
+void AItemWeapon::SwitchShootMode(){
+    if(ItemWeaponRow->bAutoMode){
+        if(ShootModex1==E_ShootMode::ESM_Single){
+            ShootModex1=E_ShootMode::ESM_Auto;
+        }
+        else{
+            ShootModex1=E_ShootMode::ESM_Single;
+        }
+    }
+}
+
+
+
+
+
+
+
+void AItemWeapon::PressFire(){
+    FireGate.Open();
+    AutoFire();
+
+
+}
+
+void AItemWeapon::AutoFire(){
+
+    if(FireGate.IsGateOpen()){
+        if(ShootModex1==E_ShootMode::ESM_Auto){
+            GetWorldTimerManager().SetTimer(TH_FireTimerInProgress, this, &AItemWeapon::AutoFire, FireInterval);
+        }
+        if(Ammo>=0){
+            PlayFireSound();
+            PlayFireFlash();
+            //--Ammo;
+        }
+        else{
+            UE_LOG(LogTemp,Warning,TEXT("NoBullets"));
+        }
+    }
+
+}
+
+void AItemWeapon::ReleaseFire(){
+    FireGate.Close();
+
+
+}
+
+
+
 
 
 //AItemWeapon

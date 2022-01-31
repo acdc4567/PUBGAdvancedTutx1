@@ -153,7 +153,7 @@ void ASCharacter::SmoothIncrease(){
 
 void ASCharacter::AltKeyPressed(){
 	bAltKeyPressed = true;
-	
+	ReleaseFire();
 	AltKeyPressedRotation=CameraBoom->GetTargetRotation();
 	
 	
@@ -174,6 +174,7 @@ void ASCharacter::CrouchKeyPressed(){
 		bIsProne=false;
 		bIsCrouching=true;
 		ReverseHoldAiming();
+		ReleaseFire();
 		HandleProneTimeFromTable(3,2);
 	}
 	else if(bIsCrouching){
@@ -214,6 +215,7 @@ void ASCharacter::ProneKeyPressed(){
 	if(bIsProne){
 		bIsProne=false;
 		ReverseHoldAiming();
+		ReleaseFire();
 		HandleProneTimeFromTable(3,1);
 	}
 	else if(bIsCrouching){
@@ -222,12 +224,14 @@ void ASCharacter::ProneKeyPressed(){
 		bIsProne=true;
 		
 		ReverseHoldAiming();
+		ReleaseFire();
 		HandleProneTimeFromTable(2,3);
 	}
 	else{
 		bIsAiming=false;
 		bIsProne=true;
 		ReverseHoldAiming();
+		ReleaseFire();
 		HandleProneTimeFromTable(1,3);
 	}
 	LimitPitchAngle(0.f);
@@ -251,6 +255,7 @@ void ASCharacter::JumpKeyPressed(){
 		bIsProne=false;
 		bIsCrouching=true;
 		ReverseHoldAiming();
+		ReleaseFire();
 		HandleProneTimeFromTable(3,2);
 	}
 	else if(bIsCrouching){
@@ -258,6 +263,7 @@ void ASCharacter::JumpKeyPressed(){
 	}
 	else{
 		Jump();
+		
 	}
 	UpdateCameraHeight();
 	
@@ -450,7 +456,10 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	
 	PlayerInputComponent->BindAction("Keyboard2",IE_Pressed,this,&ASCharacter::Keyboard2KeyPressed);
 	
-
+	PlayerInputComponent->BindAction("ShootMode",IE_Pressed,this,&ASCharacter::ShootModeKeyPressed);
+	
+	PlayerInputComponent->BindAction("Fire",IE_Pressed,this,&ASCharacter::FireKeyPressed);
+	PlayerInputComponent->BindAction("Fire",IE_Released,this,&ASCharacter::FireKeyReleased);
 
 
 }
@@ -1643,6 +1652,7 @@ void ASCharacter::PlayMontage(E_MontageType MontageType){
 
 void ASCharacter::BeginPlayMontage(){
 	if(PlayerStateRef->GetHoldGun()){
+		ReleaseFire();
 		bIsAiming=false;
 		ReverseHoldAiming();
 		PlayMontage(E_MontageType::EMT_UnEquip);
@@ -1669,9 +1679,11 @@ void ASCharacter::Keyboard1KeyPressed(){
 		bIsAiming=false;
 		ReverseHoldAiming();
 		if(PlayerStateRef->GetHoldGun()){
+			ReleaseFire();
 			PlayMontage(E_MontageType::EMT_UnEquip);
 		}
 		else{
+			ReleaseFire();
 			PlayMontage(E_MontageType::EMT_Equip);
 		}
 	}
@@ -2044,6 +2056,43 @@ void ASCharacter::SwitchCamera(bool bIsFirst){
 
 }
 
+
+void ASCharacter::ShootModeKeyPressed(){
+
+	if(PlayerStateRef->GetHoldGun()){
+		PlayerStateRef->GetHoldGun()->SwitchShootMode();
+	}
+
+
+}
+
+void ASCharacter::FireKeyPressed(){
+
+	if((PlayerStateRef->GetHoldGun()&&bEnableMove)&&!(bIsProne&&GetVelocity().Size()!=0)&&!bAltKeyPressed&&!(GetCharacterMovement()->IsFalling())){
+		if(!bIsPlayingMontage||PlayingMontageType==E_MontageType::EMT_Fire){
+			PlayerStateRef->GetHoldGun()->PressFire();
+		}		
+	}
+
+
+}
+
+void ASCharacter::FireKeyReleased(){
+
+	if(PlayerStateRef->GetHoldGun()){
+		PlayerStateRef->GetHoldGun()->ReleaseFire();
+	}
+
+
+}
+
+void ASCharacter::ReleaseFire(){
+
+	if(PlayerStateRef->GetHoldGun()){
+		PlayerStateRef->GetHoldGun()->ReleaseFire();
+	}
+
+}
 
 
 

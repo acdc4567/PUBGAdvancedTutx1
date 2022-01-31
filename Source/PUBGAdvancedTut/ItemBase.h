@@ -242,6 +242,9 @@ enum class E_ItemType : uint8
 };
 
 
+
+
+
 USTRUCT(BlueprintType)
 struct FSTR_ItemHealth : public FTableRowBase
 {
@@ -365,6 +368,38 @@ enum class E_WeaponPosition : uint8
 	
 	
 };
+
+
+UENUM(BlueprintType)
+enum class E_ShootMode : uint8
+{
+	ESM_Single UMETA(DisplayName = "Single"),
+	ESM_Auto UMETA(DisplayName = "Auto"),
+	
+	
+};
+
+
+USTRUCT(BlueprintType)
+struct FGate
+{
+	GENERATED_BODY()
+public:
+	FORCEINLINE void Open() {bIsGateOpen=true; }
+
+	FORCEINLINE void Close() {bIsGateOpen=false; }
+
+	FORCEINLINE void Toggle() {bIsGateOpen=!bIsGateOpen; }
+
+	FORCEINLINE bool IsGateOpen() const {return bIsGateOpen; }
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	bool bIsGateOpen=true;
+	
+
+};
+
 
 
 UCLASS()
