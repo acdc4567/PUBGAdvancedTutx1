@@ -82,7 +82,15 @@ public:
 	UFUNCTION(BlueprintCallable,Category=ItemsOverlap)
 	void SetPickupItems(TArray<APickupBase*> Items);
 	
+	UFUNCTION(BlueprintCallable,Category=ChangingWeaponDisplay)
+	void UpdateWeaponDisplay(FName HoldSocket);
 
+	UFUNCTION(BlueprintPure,Category=CalculateSocket)
+	FName CalculateHoldGunSocket();
+
+	void PlayTPPFireMontage();
+
+	
 	
 protected:
 	// Called when the game starts or when spawned
@@ -141,16 +149,14 @@ protected:
 	bool LimitPitchAngle(float Axis);
 
 	//ChangingItems
-	UFUNCTION(BlueprintCallable,Category=ChangingWeaponDisplay)
-	void UpdateWeaponDisplay(FName HoldSocket);
+	
 
 	UFUNCTION(BlueprintCallable,Category=ChangingEquipmentDisplay)
 	void UpdateEquipmentDisplay();
 
 	//Items->SocketClaculate
 
-	UFUNCTION(BlueprintPure,Category=CalculateSocket)
-	FName CalculateHoldGunSocket();
+	
 
 	//Items Overlap
 
@@ -241,6 +247,8 @@ protected:
 
 	void ReleaseFire();
 
+	void SetIsSightAiming(bool bIsSightAimingx1);
+
 
 public:	
 	// Called every frame
@@ -259,8 +267,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FPSCamera;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* FPSArm;
+	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed=600.f;
@@ -295,11 +302,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsHoldAiming;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
-	bool bIsAiming;
+	
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
-	bool bIsSightAiming=false;
+	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	bool bIsFiring;
@@ -372,6 +377,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* UseMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* FPSArmFireMontage;
 
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DataTable, meta = (AllowPrivateAccess = "true"))
@@ -503,5 +511,14 @@ public:
 
 	FRotator GetControllerxRotation();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = CharacterState)
+	bool bIsAiming;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState)
+	bool bIsSightAiming=false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	USkeletalMeshComponent* FPSArm;
+
+	void PlayFPSFireMontage();
 };

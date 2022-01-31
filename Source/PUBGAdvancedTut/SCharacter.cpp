@@ -292,11 +292,11 @@ void ASCharacter::AimKeyReleased(){
 		if(bIsSightAiming){
 			SwitchCamera(false);
 			HoldAiming(false);
-			bIsSightAiming=false;
+			SetIsSightAiming(false);
 		}
 		else{
 			if(GetWorld()->GetTimeSeconds()-RightPressedTime<.25f){
-				bIsSightAiming=true;
+				SetIsSightAiming(true);
 				bIsHoldAiming=false;
 			}
 			else{
@@ -319,7 +319,7 @@ void ASCharacter::ReverseHoldAiming(){
 	if(bIsSightAiming){
 		SwitchCamera(false);
 		HoldAiming(false);
-		bIsSightAiming=false;
+		SetIsSightAiming(false);
 	}
 	else{
 		if(bIsHoldAiming){
@@ -2091,6 +2091,35 @@ void ASCharacter::ReleaseFire(){
 	if(PlayerStateRef->GetHoldGun()){
 		PlayerStateRef->GetHoldGun()->ReleaseFire();
 	}
+
+}
+
+void ASCharacter::SetIsSightAiming(bool bIsSightAimingx1){
+
+	bIsSightAiming=bIsSightAimingx1;
+	if(PlayerStateRef->GetHoldGun()){
+		PlayerStateRef->GetHoldGun()->bCanPlayFiringFlash=!bIsSightAimingx1;
+	}
+}
+
+void ASCharacter::PlayFPSFireMontage(){
+	UAnimInstance* AnimInstancex = FPSArm->GetAnimInstance();
+	if(AnimInstancex&&FPSArmFireMontage){
+		AnimInstancex->Montage_Play(FPSArmFireMontage);
+		AnimInstancex->Montage_JumpToSection(FName("Default"));
+				
+	}
+
+}
+
+void ASCharacter::PlayTPPFireMontage(){
+	UAnimInstance* AnimInstancex = GetMesh()->GetAnimInstance();
+	if(AnimInstancex&&FireMontage){
+		AnimInstancex->Montage_Play(FireMontage);
+		AnimInstancex->Montage_JumpToSection(FName("Default"));
+				
+	}
+
 
 }
 

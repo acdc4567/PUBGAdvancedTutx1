@@ -10,9 +10,11 @@
 
 class USkeletalMeshComponent;
 class UStaticMeshComponent;
-
+class ASPlayerState;
 class UAudioComponent;
-
+class ASCharacter;
+class UPUBGAdvancedTutGI;
+class ASPlayerController;
 
 /**
  * 
@@ -55,6 +57,8 @@ public:
 
 protected:
 
+	virtual void BeginPlay() override;
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
 	UFUNCTION(BlueprintCallable)
@@ -96,6 +100,14 @@ private:
 	UDataTable* ItemWeaponTableObject;
 
 	float FireInterval;
+
+	//ASCharacter* MyCharacterRef;
+
+	ASPlayerState* MyPlayerStateRef;
+
+	UPUBGAdvancedTutGI* MyGameInstanceRef;
+
+	ASPlayerController* MyPlayerControllerRef;
 	
 
 public:
@@ -127,6 +139,10 @@ public:
 	FGate FireGate;
 
 	FTimerHandle TH_FireTimerInProgress;
+
+	bool bCanPlayFiringFlash=true;
+
+
 
 	
 

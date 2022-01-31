@@ -4,7 +4,10 @@
 #include "ItemWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
-
+#include "SPlayerState.h"
+#include "SCharacter.h"
+#include "PUBGAdvancedTutGI.h"
+#include "SPlayerController.h"
 #include "Components/AudioComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -41,6 +44,17 @@ AItemWeapon::AItemWeapon(){
     FireSound=CreateDefaultSubobject<UAudioComponent>("FireSound");
 
     
+}
+
+void AItemWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+    
+   
+    MyPlayerControllerRef=Cast<ASPlayerController>(UGameplayStatics::GetPlayerController(this,0));
+    MyPlayerStateRef=Cast<ASPlayerState>(MyPlayerControllerRef->PlayerState);
+    MyGameInstanceRef=Cast<UPUBGAdvancedTutGI>(UGameplayStatics::GetGameInstance(GetWorld()));
+
 }
 
 void AItemWeapon::OnConstruction(const FTransform& Transform){
@@ -213,7 +227,19 @@ void AItemWeapon::AutoFire(){
         }
         if(Ammo>=0){
             PlayFireSound();
-            PlayFireFlash();
+            if(bCanPlayFiringFlash){
+                PlayFireFlash();
+            }
+            CharacterRef->bIsAiming=true;
+            FName HoldGunSkt=CharacterRef->CalculateHoldGunSocket();
+            CharacterRef->UpdateWeaponDisplay(HoldGunSkt);
+            if(CharacterRef->bIsSightAiming){
+                CharacterRef->PlayFPSFireMontage();
+
+            }
+            else{
+                CharacterRef->PlayTPPFireMontage();
+            }
             //--Ammo;
         }
         else{
@@ -225,6 +251,7 @@ void AItemWeapon::AutoFire(){
 
 void AItemWeapon::ReleaseFire(){
     FireGate.Close();
+    GetWorldTimerManager().ClearTimer(TH_FireTimerInProgress);
 
 
 }
